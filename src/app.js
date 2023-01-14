@@ -4,14 +4,31 @@ import dotenv from "dotenv"
 import { MongoClient, ObjectId } from "mongodb"
 import dayjs from 'dayjs'
 
-const PORT = 5000
-const app = express()
-let db
-
 dotenv.config()
 
-app.use(cors())
-app.use(express.json())
-app.listen(PORT, () => {
-    console.log(`Initialized server: port ${PORT}`)
+// Server configs
+const PORT = 5000
+const server = express()
+
+server.use(express.json());
+server.use(cors());
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`)
 })
+
+// Mongo configs
+const mongoClient = new MongoClient(process.env.DATABASE_URL);
+let db;
+
+try {
+	await mongoClient.connect();
+	db = mongoClient.db();  
+    console.log("Successfully connected to the database"); 
+} catch (err) {
+	console.log(err.message);
+}
+
+server.get('/participants', async (req, res) => {
+	const users = await db.collection('participants').find().toArray();
+	res.send(users);
+});
