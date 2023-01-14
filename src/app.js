@@ -50,8 +50,28 @@ server.post('/participants', async (req, res) => {
     res.status(201).send('User successfully logged in ');
 });
 
-
+// Rota GET participants
 server.get('/participants', async (req, res) => {
 	const users = await db.collection('participants').find().toArray();
 	res.send(users);
+});
+
+
+// Rota POST messages
+server.post('/messages', async (req, res) => {
+	const { to, text, type } = req.body;
+    const from = req.headers.user;
+
+    const loggedUser = await db.collection('participants').findOne({ from });
+    if (loggedUser) return res.status(422).send('Unregistered user');
+
+    await db.collection('messages').insertOne({
+		from,
+		to,
+		text,
+		type,
+		time: dayjs(Date.now()).format('hh:mm:ss'),
+	});
+
+    res.status(201).send('Message posted successfully');
 });
