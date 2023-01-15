@@ -90,20 +90,42 @@ server.get('/messages', async (req, res) => {
             ]
     }).toArray();
 
-    const reverseMessages = messages.reverse();
+    // const reverseMessages = messages.reverse();
 
-    if (limit) return res.send(reverseMessages.slice(0,limit));
+    if (limit) return res.send(messages.slice(-limit));
 
-    return res.send(reverseMessages);
+    return res.send(messages);
 });
 
 // Rota POST status
 server.post('/status', async (req, res) => {
     const { user } = req.headers;
-  
+
     const userRegistered = await db.collection("participants").findOne({ name: user });
     if (!userRegistered) return res.sendStatus(404);
-  
+
     await db.collection("participants").updateOne({ name: user }, { $set: { lastStatus: Date.now() } });
     res.sendStatus(200);
-  });
+});
+
+// Check user activity
+setInterval(async () => {
+    const thresholdTime = 10000 //ms;
+
+    const allUsers = await db.collection('participants').find().toArray();
+    allUsers.forEach(async user => {
+        if (Date.now() - user.lastStatus > thresholdTime) {
+
+            await db.collection("participants").deleteOne({ _id: ObjectId(user._id) })
+
+            await db.collection("messages").insertOne({
+                from: user.name,
+                to: 'Todos',
+                text: 'sai da sala...',
+                type: 'status',
+                time: dayjs(Date.now()).format('hh:mm:ss')
+            });
+        };
+    });
+
+}, 15000);
