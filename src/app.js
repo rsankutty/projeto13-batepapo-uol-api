@@ -3,6 +3,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import { MongoClient, ObjectId } from "mongodb"
 import dayjs from 'dayjs'
+import joi from 'joi'
 
 dotenv.config()
 
@@ -31,6 +32,9 @@ try {
 // Rota POST participants
 server.post('/participants', async (req, res) => {
     const { name } = req.body;
+
+    const validation = userSchema.validate({name});
+    if (!validation) return res.sendStatus(422);
 
     const registeredUser = await db.collection('participants').findOne({ name });
     if (registeredUser) return res.status(409).send('Username already in use');
@@ -62,8 +66,11 @@ server.post('/messages', async (req, res) => {
     const { to, text, type } = req.body;
     const from = req.headers.user;
 
+    const validation = userSchema.validate({ to, text, type });
+    if (!validation) return res.sendStatus(422);
+
     const loggedUser = await db.collection('participants').findOne({ from });
-    if (loggedUser) return res.status(422).send('Unregistered user');
+    if (!loggedUser) return res.status(422).send('Unregistered user');
 
     await db.collection("messages").insertOne({
         from,
@@ -81,6 +88,10 @@ server.get('/messages', async (req, res) => {
     const { limit } = req.query;
     const { user } = req.headers;
 
+    const validLimit = Number(limit)
+
+    if (isNaN(validLimit) || validLimit==0) return res.sendStatus(422)
+
     const messages = await db.collection("messages").find({
         $or:
             [
@@ -89,8 +100,6 @@ server.get('/messages', async (req, res) => {
                 { from: user }
             ]
     }).toArray();
-
-    // const reverseMessages = messages.reverse();
 
     if (limit) return res.send(messages.slice(-limit));
 
@@ -129,3 +138,14 @@ setInterval(async () => {
     });
 
 }, 15000);
+
+// Schema validacoes
+const userSchema = joi.object({
+    name: joi.string().required()
+});
+
+const messageSchema = joi.object({
+	to: joi.string().required(),
+	type: joi.string().valid('message', 'private_message').required(),
+    text: joi.string().required()
+});
