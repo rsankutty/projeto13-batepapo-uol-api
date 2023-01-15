@@ -66,7 +66,7 @@ server.post('/messages', async (req, res) => {
     const { to, text, type } = req.body;
     const from = req.headers.user;
 
-    const validation = userSchema.validate({ to, text, type });
+    const validation = messageSchema.validate({ to, text, type });
     if (validation.error) return res.sendStatus(422);
 
     const loggedUser = await db.collection('participants').findOne({ from });
