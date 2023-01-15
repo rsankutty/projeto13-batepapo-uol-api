@@ -34,7 +34,7 @@ server.post('/participants', async (req, res) => {
     const { name } = req.body;
 
     const validation = userSchema.validate({name});
-    if (!validation) return res.sendStatus(422);
+    if (validation.error) return res.sendStatus(422);
 
     const registeredUser = await db.collection('participants').findOne({ name });
     if (registeredUser) return res.status(409).send('Username already in use');
@@ -67,7 +67,7 @@ server.post('/messages', async (req, res) => {
     const from = req.headers.user;
 
     const validation = userSchema.validate({ to, text, type });
-    if (!validation) return res.sendStatus(422);
+    if (validation.error) return res.sendStatus(422);
 
     const loggedUser = await db.collection('participants').findOne({ from });
     if (!loggedUser) return res.status(422).send('Unregistered user');
