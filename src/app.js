@@ -96,3 +96,14 @@ server.get('/messages', async (req, res) => {
 
     return res.send(reverseMessages);
 });
+
+// Rota POST status
+server.post('/status', async (req, res) => {
+    const { user } = req.headers;
+  
+    const userRegistered = await db.collection("participants").findOne({ name: user });
+    if (!userRegistered) return res.sendStatus(404);
+  
+    await db.collection("participants").updateOne({ name: user }, { $set: { lastStatus: Date.now() } });
+    res.sendStatus(200);
+  });
