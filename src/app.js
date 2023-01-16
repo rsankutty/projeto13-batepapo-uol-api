@@ -98,12 +98,12 @@ server.get('/messages', async (req, res) => {
             ]
     }).toArray();
 
-    if (!limit) return res.send(messages);
+    if (!limit) return res.send(messages.reverse());
 
     const validLimit = Number(limit)
-    if (isNaN(validLimit) || validLimit==0) return res.sendStatus(422)
+    if (isNaN(validLimit) || validLimit <= 0) return res.sendStatus(422)
 
-    return res.send(messages.slice(-validLimit));
+    return res.send(messages.reverse().slice(0,validLimit));
     
 });
 
