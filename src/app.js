@@ -64,16 +64,16 @@ server.get('/participants', async (req, res) => {
 // Rota POST messages
 server.post('/messages', async (req, res) => {
     const { to, text, type } = req.body;
-    const from = req.headers.user;
+    const {user} = req.headers;
 
     const validation = messageSchema.validate({ to, text, type });
     if (validation.error) return res.sendStatus(422);
 
-    const loggedUser = await db.collection('participants').findOne({ from });
+    const loggedUser = await db.collection('participants').findOne( {name:user} );
     if (!loggedUser) return res.status(422).send('Unregistered user');
 
     await db.collection("messages").insertOne({
-        from,
+        from:user,
         to,
         text,
         type,
@@ -87,10 +87,7 @@ server.post('/messages', async (req, res) => {
 server.get('/messages', async (req, res) => {
     const { limit } = req.query;
     const { user } = req.headers;
-
-    const validLimit = Number(limit)
-
-    if (isNaN(validLimit) || validLimit==0) return res.sendStatus(422)
+    console.log(limit)
 
     const messages = await db.collection("messages").find({
         $or:
@@ -101,9 +98,13 @@ server.get('/messages', async (req, res) => {
             ]
     }).toArray();
 
-    if (limit) return res.send(messages.slice(-limit));
+    if (!limit) return res.send(messages);
 
-    return res.send(messages);
+    const validLimit = Number(limit)
+    if (isNaN(validLimit) || validLimit==0) return res.sendStatus(422)
+
+    return res.send(messages.slice(-validLimit));
+    
 });
 
 // Rota POST status
